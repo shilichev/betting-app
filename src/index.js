@@ -13,6 +13,8 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use('/api/sessions', require('./routes/sessions'));
 app.use('/api/events', require('./routes/events'));
 app.use('/api/bets', require('./routes/bets'));
+app.use('/api/score-bets', require('./routes/score_bets'));
+app.use('/api/players', require('./routes/players'));
 
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/index.html'));
