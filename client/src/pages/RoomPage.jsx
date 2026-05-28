@@ -21,8 +21,9 @@ export default function RoomPage() {
   const fixedBet = session.fixed_bet ?? 100;
 
   // Общий банк = сумма всех незавершённых ставок
+  // Банк = все ставки кроме уже выигранных (деньги ушли из балансов)
   const totalBank = scoreBets
-    .filter(b => b.status === 'created')
+    .filter(b => b.status !== 'won')
     .reduce((s, b) => s + b.amount, 0);
 
   async function handleStart() {
