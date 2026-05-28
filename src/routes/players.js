@@ -3,22 +3,19 @@ const pool = require('../db');
 
 // PATCH /api/players/:id/balance — хост корректирует баланс
 router.patch('/:id/balance', async (req, res) => {
-  const { delta, reason } = req.body;
+  const { delta, reason = 'Корректировка хостом' } = req.body;
   if (delta === undefined) return res.status(400).json({ error: 'delta required' });
-
   try {
-    const { rows } = await pool.query(
+    const { rows: [player] } = await pool.query(
       `UPDATE players SET balance=GREATEST(0, balance+$1) WHERE id=$2 RETURNING *`,
       [delta, req.params.id]
     );
-    if (!rows[0]) return res.status(404).json({ error: 'Player not found' });
-
+    if (!player) return res.status(404).json({ error: 'Player not found' });
     await pool.query(
       `INSERT INTO balance_log (player_id, delta, reason) VALUES ($1,$2,$3)`,
-      [req.params.id, delta, reason || 'Корректировка хостом']
+      [req.params.id, delta, reason]
     );
-
-    res.json(rows[0]);
+    res.json(player);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

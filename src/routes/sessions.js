@@ -2,91 +2,88 @@ const router = require('express').Router();
 const pool = require('../db');
 const { v4: uuidv4 } = require('uuid');
 
-function generateCode() {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
-}
+const generateCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 
-// POST /api/sessions — create room
+// POST /api/sessions — создать комнату
 router.post('/', async (req, res) => {
-  const { title, mode, nickname, startingBalance } = req.body;
+  const { title, nickname, startingBalance = 1000, fixedBet = 100 } = req.body;
   if (!title || !nickname) return res.status(400).json({ error: 'title and nickname required' });
 
   const code = generateCode();
   const guestToken = uuidv4();
-  const balance = startingBalance || 1000;
 
   try {
-    const sessionRes = await pool.query(
-      `INSERT INTO sessions (code, title, mode, starting_balance) VALUES ($1,$2,$3,$4) RETURNING *`,
-      [code, title, mode || 'pvp', balance]
+    const { rows: [session] } = await pool.query(
+      `INSERT INTO sessions (code, title, mode, starting_balance, fixed_bet) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [code, title, 'bankroll', startingBalance, fixedBet]
     );
-    const session = sessionRes.rows[0];
-
-    const playerRes = await pool.query(
+    const { rows: [player] } = await pool.query(
       `INSERT INTO players (session_id, nickname, guest_token, is_host, balance) VALUES ($1,$2,$3,true,$4) RETURNING *`,
-      [session.id, nickname, guestToken, balance]
+      [session.id, nickname, guestToken, startingBalance]
     );
-    const player = playerRes.rows[0];
-
     await pool.query(`UPDATE sessions SET host_player_id=$1 WHERE id=$2`, [player.id, session.id]);
 
     res.json({ session: { ...session, host_player_id: player.id }, player, guestToken });
   } catch (e) {
-    console.error(e);
     res.status(500).json({ error: e.message });
   }
 });
 
-// GET /api/sessions/:code — get session by code
+// GET /api/sessions/:code — найти по коду
 router.get('/:code', async (req, res) => {
   try {
     const { rows } = await pool.query(`SELECT * FROM sessions WHERE code=$1`, [req.params.code.toUpperCase()]);
-    if (!rows[0]) return res.status(404).json({ error: 'Session not found' });
+    if (!rows[0]) return res.status(404).json({ error: 'Комната не найдена' });
     res.json(rows[0]);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// GET /api/sessions/:id/full — full session state
+// GET /api/sessions/:id/full — полное состояние (сессия + игроки + события + ставки)
 router.get('/:id/full', async (req, res) => {
   try {
-    const sessionRes = await pool.query(`SELECT * FROM sessions WHERE id=$1`, [req.params.id]);
-    if (!sessionRes.rows[0]) return res.status(404).json({ error: 'Not found' });
+    const { rows: [session] } = await pool.query(`SELECT * FROM sessions WHERE id=$1`, [req.params.id]);
+    if (!session) return res.status(404).json({ error: 'Not found' });
 
-    const players = await pool.query(`SELECT id, nickname, is_host, balance FROM players WHERE session_id=$1 ORDER BY joined_at`, [req.params.id]);
-    const events = await pool.query(`SELECT * FROM events WHERE session_id=$1 ORDER BY created_at DESC`, [req.params.id]);
+    const { rows: players } = await pool.query(
+      `SELECT id, nickname, is_host, balance FROM players WHERE session_id=$1 ORDER BY joined_at`,
+      [req.params.id]
+    );
+    const { rows: events } = await pool.query(
+      `SELECT * FROM events WHERE session_id=$1 ORDER BY created_at DESC`,
+      [req.params.id]
+    );
 
-    const eventsWithBets = await Promise.all(events.rows.map(async (ev) => {
-      const bets = await pool.query(
+    // Подтягиваем ставки к каждому событию
+    const eventsWithBets = await Promise.all(events.map(async (ev) => {
+      const { rows: bets } = await pool.query(
         `SELECT b.*, p.nickname FROM bets b JOIN players p ON b.player_id=p.id WHERE b.event_id=$1`,
         [ev.id]
       );
-      return { ...ev, bets: bets.rows };
+      return { ...ev, bets };
     }));
 
-    res.json({ session: sessionRes.rows[0], players: players.rows, events: eventsWithBets });
+    res.json({ session, players, events: eventsWithBets });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
 });
 
-// POST /api/sessions/:id/join
+// POST /api/sessions/:id/join — войти гостем
 router.post('/:id/join', async (req, res) => {
   const { nickname } = req.body;
   if (!nickname) return res.status(400).json({ error: 'nickname required' });
-
   try {
-    const sessionRes = await pool.query(`SELECT * FROM sessions WHERE id=$1`, [req.params.id]);
-    if (!sessionRes.rows[0]) return res.status(404).json({ error: 'Session not found' });
-    const session = sessionRes.rows[0];
+    const { rows: [session] } = await pool.query(`SELECT * FROM sessions WHERE id=$1`, [req.params.id]);
+    if (!session) return res.status(404).json({ error: 'Session not found' });
 
     const guestToken = uuidv4();
-    const { rows } = await pool.query(
+    const { rows: [player] } = await pool.query(
       `INSERT INTO players (session_id, nickname, guest_token, balance) VALUES ($1,$2,$3,$4) RETURNING *`,
       [req.params.id, nickname, guestToken, session.starting_balance]
     );
-    res.json({ player: rows[0], guestToken });
+    res.json({ player, guestToken });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
