@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BetRoom</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, sans-serif; background: #0f0f13; color: #e8e8e8; min-height: 100vh; }
+    .topbar { background: #1a1a22; padding: 14px 24px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #2a2a35; }
+    .topbar h1 { font-size: 18px; font-weight: 700; }
+    .topbar h1 span { color: #7c6ff7; }
+    .room-code { background: #2a2a35; padding: 5px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: .08em; cursor: pointer; }
+    .room-code:hover { background: #3a3a48; }
+    .layout { display: flex; gap: 0; max-width: 1100px; margin: 0 auto; padding: 24px; gap: 20px; }
+    .sidebar { width: 220px; flex-shrink: 0; }
+    .main { flex: 1; min-width: 0; }
+    .section-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #666; margin-bottom: 10px; }
+    .player-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #1a1a22; border-radius: 8px; margin-bottom: 6px; font-size: 14px; }
+    .player-item .name { display: flex; align-items: center; gap: 6px; }
+    .host-badge { font-size: 9px; background: #7c6ff7; color: #fff; padding: 1px 5px; border-radius: 4px; font-weight: 600; }
+    .you-badge { font-size: 9px; background: #2a6655; color: #5dcaa5; padding: 1px 5px; border-radius: 4px; font-weight: 600; }
+    .balance { font-weight: 600; color: #7c6ff7; }
+    .event-card { background: #1a1a22; border-radius: 12px; padding: 18px; margin-bottom: 14px; border: 1px solid #2a2a35; }
+    .event-title { font-size: 16px; font-weight: 600; margin-bottom: 14px; }
+    .options { display: flex; gap: 10px; margin-bottom: 14px; }
+    .option { flex: 1; background: #0f0f13; border-radius: 8px; padding: 12px; text-align: center; }
+    .option-label { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+    .option-odds { font-size: 20px; font-weight: 700; color: #7c6ff7; }
+    .bet-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    .bet-select { flex: 1; min-width: 100px; padding: 8px 10px; background: #0f0f13; border: 1px solid #2a2a35; border-radius: 7px; color: #e8e8e8; font-size: 14px; }
+    .bet-input { width: 100px; padding: 8px 10px; background: #0f0f13; border: 1px solid #2a2a35; border-radius: 7px; color: #e8e8e8; font-size: 14px; }
+    .btn { padding: 8px 16px; border: none; border-radius: 7px; font-size: 13px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+    .btn:hover { opacity: .85; }
+    .btn:disabled { opacity: .35; cursor: default; }
+    .btn-primary { background: #7c6ff7; color: #fff; }
+    .btn-danger { background: #7c2a2a; color: #f07070; }
+    .btn-success { background: #1a4a3a; color: #5dcaa5; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
+    .status-badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 5px; margin-left: 8px; }
+    .status-open { background: #1a3a2a; color: #5dcaa5; }
+    .status-locked { background: #3a2a1a; color: #ef9f27; }
+    .status-resolved { background: #2a2a3a; color: #7c6ff7; }
+    .host-controls { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+    .bets-list { margin-top: 12px; }
+    .bet-item { display: flex; justify-content: space-between; font-size: 13px; color: #888; padding: 4px 0; border-top: 1px solid #2a2a35; }
+    .bet-item .nick { color: #ccc; }
+    .bet-item.won { color: #5dcaa5; }
+    .bet-item.lost { color: #f07070; text-decoration: line-through; opacity: .6; }
+    .add-event-card { background: #1a1a22; border: 2px dashed #2a2a35; border-radius: 12px; padding: 20px; margin-bottom: 14px; }
+    .add-event-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 14px; color: #888; }
+    .field { margin-bottom: 12px; }
+    .field label { display: block; font-size: 11px; color: #666; margin-bottom: 4px; font-weight: 600; text-transform: uppercase; }
+    .field input { width: 100%; padding: 8px 12px; background: #0f0f13; border: 1px solid #2a2a35; border-radius: 7px; color: #e8e8e8; font-size: 14px; outline: none; }
+    .field input:focus { border-color: #7c6ff7; }
+    .row { display: flex; gap: 10px; }
+    .row .field { flex: 1; }
+    .share-bar { background: #1a1a3a; border: 1px solid #3a3a6a; border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .share-bar span { font-size: 13px; color: #aaa; }
+    .share-bar strong { color: #e8e8e8; letter-spacing: .08em; font-size: 16px; }
+    .empty { text-align: center; padding: 40px; color: #555; font-size: 14px; }
+    .session-controls { display: flex; gap: 8px; margin-bottom: 20px; }
+    .status-bar { font-size: 12px; color: #666; padding: 6px 12px; background: #1a1a22; border-radius: 6px; display: inline-flex; align-items: center; gap: 6px; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #5dcaa5; animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .outcome-label { font-weight: 700; color: #5dcaa5; }
+    .payout { color: #5dcaa5; font-weight: 600; }
+    @media(max-width:640px) { .layout { flex-direction: column; padding: 14px; } .sidebar { width: 100%; } }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>Bet<span>Room</span></h1>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="status-bar"><div class="dot"></div><span id="session-status">загрузка...</span></div>
+      <div class="room-code" id="room-code" onclick="copyCode()">—</div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar">
+      <div class="section-title">Игроки</div>
+      <div id="players-list"></div>
+    </div>
+
+    <div class="main">
+      <div class="share-bar" id="share-bar" style="display:none">
+        Пригласи друзей — код комнаты: <strong id="share-code">—</strong>
+        <button class="btn btn-primary btn-sm" onclick="copyCode()">Скопировать</button>
+      </div>
+
+      <div id="host-session-controls" style="display:none" class="session-controls">
+        <button class="btn btn-success btn-sm" id="btn-start" onclick="startSession()">▶ Начать игру</button>
+        <button class="btn btn-danger btn-sm" id="btn-finish" onclick="finishSession()">■ Завершить</button>
+      </div>
+
+      <div id="add-event-form" style="display:none">
+        <div class="add-event-card">
+          <h3>+ Новое событие</h3>
+          <div class="field"><label>Название события</label><input id="ev-title" placeholder="Кто забьёт первый гол?"></div>
+          <div class="row">
+            <div class="field"><label>Вариант A</label><input id="ev-a" placeholder="Мбаппе"></div>
+            <div class="field"><label>Коэффициент A</label><input id="ev-oa" type="number" value="2.0" step="0.1" min="1.1"></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>Вариант B</label><input id="ev-b" placeholder="Холланд"></div>
+            <div class="field"><label>Коэффициент B</label><input id="ev-ob" type="number" value="2.0" step="0.1" min="1.1"></div>
+          </div>
+          <button class="btn btn-primary" onclick="createEvent()">Создать событие</button>
+        </div>
+      </div>
+
+      <div id="events-list"></div>
+    </div>
+  </div>
+
+  <script>
+    const sessionId = new URLSearchParams(location.search).get('id');
+    const guestToken = localStorage.getItem('guestToken');
+    const myPlayerId = localStorage.getItem('playerId');
+    let state = null;
+    let isHost = false;
+
+    if (!sessionId || !guestToken) { location.href = '/'; }
+
+    async function load() {
+      try {
+        const res = await fetch(`/api/sessions/${sessionId}/full`);
+        state = await res.json();
+        render();
+      } catch(e) { console.error(e); }
+    }
+
+    function render() {
+      const { session, players, events } = state;
+      const me = players.find(p => p.id === myPlayerId);
+      isHost = me?.is_host;
+
+      // topbar
+      document.getElementById('room-code').textContent = session.code;
+      document.getElementById('share-code').textContent = session.code;
+      document.getElementById('session-status').textContent =
+        session.status === 'waiting' ? 'Ожидание' :
+        session.status === 'active' ? 'Идёт игра' : 'Завершена';
+
+      document.getElementById('share-bar').style.display = session.status === 'waiting' ? 'flex' : 'none';
+      document.getElementById('host-session-controls').style.display = isHost ? 'flex' : 'none';
+      document.getElementById('add-event-form').style.display = (isHost && session.status === 'active') ? 'block' : 'none';
+
+      const startBtn = document.getElementById('btn-start');
+      const finishBtn = document.getElementById('btn-finish');
+      if (startBtn) { startBtn.style.display = session.status === 'waiting' ? '' : 'none'; }
+      if (finishBtn) { finishBtn.style.display = session.status === 'active' ? '' : 'none'; }
+
+      // players
+      const pl = document.getElementById('players-list');
+      pl.innerHTML = players.sort((a,b) => b.balance - a.balance).map(p => `
+        <div class="player-item">
+          <div class="name">
+            ${p.is_host ? '<span class="host-badge">HOST</span>' : ''}
+            ${p.id === myPlayerId ? '<span class="you-badge">ТЫ</span>' : ''}
+            ${p.nickname}
+          </div>
+          <span class="balance">${p.balance.toLocaleString()}</span>
+        </div>
+      `).join('');
+
+      // events
+      const el = document.getElementById('events-list');
+      if (!events.length) {
+        el.innerHTML = `<div class="empty">${isHost && session.status === 'active' ? 'Создай первое событие выше ↑' : 'Событий пока нет'}</div>`;
+        return;
+      }
+
+      el.innerHTML = events.map(ev => {
+        const myBet = ev.bets.find(b => b.player_id === myPlayerId);
+        const canBet = !myBet && ev.status === 'open' && session.status === 'active' && me;
+        const totalPool = ev.bets.reduce((s,b) => s + b.amount, 0);
+
+        return `
+        <div class="event-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div class="event-title">
+              ${ev.title}
+              <span class="status-badge status-${ev.status}">${ev.status === 'open' ? 'Ставки открыты' : ev.status === 'locked' ? 'Ставки закрыты' : 'Завершено'}</span>
+            </div>
+            ${isHost && ev.status === 'open' ? `<button class="btn btn-danger btn-sm" onclick="lockEvent('${ev.id}')">Закрыть ставки</button>` : ''}
+          </div>
+
+          ${ev.status === 'resolved' ? `<div style="margin-bottom:10px;font-size:13px;color:#888">Победил: <span class="outcome-label">${ev.outcome}</span></div>` : ''}
+
+          <div class="options">
+            <div class="option" style="${ev.outcome === ev.option_a ? 'border:1px solid #5dcaa5' : ''}">
+              <div class="option-label">${ev.option_a}</div>
+              <div class="option-odds">×${ev.odds_a}</div>
+            </div>
+            <div class="option" style="${ev.outcome === ev.option_b ? 'border:1px solid #5dcaa5' : ''}">
+              <div class="option-label">${ev.option_b}</div>
+              <div class="option-odds">×${ev.odds_b}</div>
+            </div>
+          </div>
+
+          ${canBet ? `
+            <div class="bet-form">
+              <select class="bet-select" id="side-${ev.id}">
+                <option value="${ev.option_a}">${ev.option_a} (×${ev.odds_a})</option>
+                <option value="${ev.option_b}">${ev.option_b} (×${ev.odds_b})</option>
+              </select>
+              <input class="bet-input" type="number" id="amt-${ev.id}" placeholder="Сумма" min="1" max="${me?.balance || 1000}" value="100">
+              <button class="btn btn-primary btn-sm" onclick="placeBet('${ev.id}')">Поставить</button>
+            </div>
+          ` : myBet ? `
+            <div style="font-size:13px;color:#888;margin-top:4px">
+              Твоя ставка: <strong style="color:#7c6ff7">${myBet.side}</strong> на <strong>${myBet.amount.toLocaleString()}</strong>
+              ${myBet.status === 'won' ? `<span class="payout"> → +${myBet.payout.toLocaleString()} 🎉</span>` : ''}
+              ${myBet.status === 'lost' ? `<span style="color:#f07070"> — проиграл</span>` : ''}
+            </div>
+          ` : ''}
+
+          ${isHost && ev.status === 'locked' ? `
+            <div class="host-controls">
+              <button class="btn btn-success btn-sm" onclick="resolveEvent('${ev.id}', 'a')">✓ Победил ${ev.option_a}</button>
+              <button class="btn btn-success btn-sm" onclick="resolveEvent('${ev.id}', 'b')">✓ Победил ${ev.option_b}</button>
+            </div>
+          ` : ''}
+
+          ${ev.bets.length ? `
+            <div class="bets-list">
+              ${ev.bets.map(b => `
+                <div class="bet-item ${b.status}">
+                  <span class="nick">${b.nickname}</span>
+                  <span>${b.side} · ${b.amount.toLocaleString()} ${b.status === 'won' ? `<span class="payout">+${b.payout.toLocaleString()}</span>` : ''}</span>
+                </div>
+              `).join('')}
+              <div style="font-size:11px;color:#555;margin-top:6px">Пул: ${totalPool.toLocaleString()}</div>
+            </div>
+          ` : ''}
+        </div>
+        `;
+      }).join('');
+    }
+
+    async function placeBet(eventId) {
+      const side = document.getElementById(`side-${eventId}`).value;
+      const amount = parseInt(document.getElementById(`amt-${eventId}`).value);
+      const res = await fetch('/api/bets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ eventId, guestToken, side, amount })
+      });
+      const data = await res.json();
+      if (!res.ok) return alert(data.error);
+      await load();
+    }
+
+    async function createEvent() {
+      const res = await fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId,
+          title: document.getElementById('ev-title').value.trim(),
+          optionA: document.getElementById('ev-a').value.trim(),
+          optionB: document.getElementById('ev-b').value.trim(),
+          oddsA: parseFloat(document.getElementById('ev-oa').value),
+          oddsB: parseFloat(document.getElementById('ev-ob').value)
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) return alert(data.error);
+      ['ev-title','ev-a','ev-b'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('ev-oa').value = '2.0';
+      document.getElementById('ev-ob').value = '2.0';
+      await load();
+    }
+
+    async function lockEvent(id) {
+      await fetch(`/api/events/${id}/lock`, { method: 'PATCH' });
+      await load();
+    }
+
+    async function resolveEvent(id, outcome) {
+      await fetch(`/api/events/${id}/resolve`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ outcome })
+      });
+      await load();
+    }
+
+    async function startSession() {
+      await fetch(`/api/sessions/${sessionId}/start`, { method: 'PATCH' });
+      await load();
+    }
+
+    async function finishSession() {
+      if (!confirm('Завершить сессию?')) return;
+      await fetch(`/api/sessions/${sessionId}/finish`, { method: 'PATCH' });
+      await load();
+    }
+
+    function copyCode() {
+      const code = state?.session?.code;
+      if (!code) return;
+      navigator.clipboard.writeText(code).then(() => {
+        const el = document.getElementById('room-code');
+        el.textContent = 'Скопировано!';
+        setTimeout(() => el.textContent = code, 1500);
+      });
+    }
+
+    load();
+    setInterval(load, 5000);
+  </script>
+</body>
+</html>
