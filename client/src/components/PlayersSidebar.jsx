@@ -39,6 +39,7 @@ function PlayerItem({ player, isMe, isHost, sessionActive, onAdjust }) {
           {player.is_host && <span className="badge badge-host">HOST</span>}
           {isMe         && <span className="badge badge-you">ТЫ</span>}
           <span>{player.nickname}</span>
+          {isHost && player.pin && <span className="player-pin">PIN: {player.pin}</span>}
         </div>
         <span className="player-balance">{player.balance.toLocaleString()}</span>
       </div>

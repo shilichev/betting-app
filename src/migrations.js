@@ -77,6 +77,7 @@ async function runMigrations() {
   `);
   // Новые колонки (безопасно, IF NOT EXISTS)
   await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS fixed_bet INTEGER DEFAULT 100`);
+  await pool.query(`ALTER TABLE players ADD COLUMN IF NOT EXISTS pin VARCHAR(10)`);
   await pool.query(`ALTER TABLE score_bets ADD COLUMN IF NOT EXISTS event_id UUID REFERENCES events(id) ON DELETE CASCADE`);
   await pool.query(`ALTER TABLE score_bets ADD COLUMN IF NOT EXISTS predicted_winner VARCHAR(20) DEFAULT 'draw'`);
 

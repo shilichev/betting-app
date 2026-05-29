@@ -1,11 +1,54 @@
+import { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useRoom } from '../hooks/useRoom';
-import { startSession, finishSession } from '../api';
+import { startSession, finishSession, joinSession } from '../api';
 
 import TopBar          from '../components/TopBar';
 import PlayersSidebar  from '../components/PlayersSidebar';
 import AddEventForm    from '../components/AddEventForm';
 import ScoreBetSection from '../components/ScoreBetSection';
+
+function RejoinForm({ sessionId, onRejoin }) {
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e) {
+    e.preventDefault();
+    setError(''); setLoading(true);
+    try {
+      const data = await joinSession(sessionId, { pin });
+      localStorage.setItem('guestToken', data.guestToken);
+      localStorage.setItem('playerId', data.player.id);
+      onRejoin();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="lobby">
+      <div className="lobby-card">
+        <h1 className="logo">Bet<span>Room</span></h1>
+        <p className="subtitle">Введи свой PIN чтобы войти обратно</p>
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label>Твой PIN</label>
+            <input value={pin} maxLength={4} className="code-input"
+              onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
+              placeholder="1234" required autoFocus />
+          </div>
+          {error && <div className="error-msg">{error}</div>}
+          <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
+            {loading ? '...' : 'Войти'}
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}
 
 export default function RoomPage() {
   const { id: sessionId } = useParams();
@@ -17,6 +60,11 @@ export default function RoomPage() {
 
   if (loading) return <div className="loading">Загрузка...</div>;
   if (!session) return <div className="loading">Комната не найдена</div>;
+
+  // Нет сессии в localStorage — показываем форму восстановления по PIN
+  if (!localStorage.getItem('guestToken')) {
+    return <RejoinForm sessionId={sessionId} onRejoin={refresh} />;
+  }
 
   const fixedBet = session.fixed_bet ?? 100;
 

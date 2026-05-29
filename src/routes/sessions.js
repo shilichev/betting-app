@@ -6,8 +6,8 @@ const generateCode = () => Math.random().toString(36).substring(2, 8).toUpperCas
 
 // POST /api/sessions — создать комнату
 router.post('/', async (req, res) => {
-  const { title, nickname, startingBalance = 1000, fixedBet = 100 } = req.body;
-  if (!title || !nickname) return res.status(400).json({ error: 'title and nickname required' });
+  const { title, nickname, startingBalance = 1000, fixedBet = 100, pin } = req.body;
+  if (!title || !nickname || !pin) return res.status(400).json({ error: 'title, nickname, pin required' });
 
   const code = generateCode();
   const guestToken = uuidv4();
@@ -18,8 +18,8 @@ router.post('/', async (req, res) => {
       [code, title, 'bankroll', startingBalance, fixedBet]
     );
     const { rows: [player] } = await pool.query(
-      `INSERT INTO players (session_id, nickname, guest_token, is_host, balance) VALUES ($1,$2,$3,true,$4) RETURNING *`,
-      [session.id, nickname, guestToken, startingBalance]
+      `INSERT INTO players (session_id, nickname, guest_token, is_host, balance, pin) VALUES ($1,$2,$3,true,$4,$5) RETURNING *`,
+      [session.id, nickname, guestToken, startingBalance, pin]
     );
     await pool.query(`UPDATE sessions SET host_player_id=$1 WHERE id=$2`, [player.id, session.id]);
 
@@ -47,7 +47,7 @@ router.get('/:id/full', async (req, res) => {
     if (!session) return res.status(404).json({ error: 'Not found' });
 
     const { rows: players } = await pool.query(
-      `SELECT id, nickname, is_host, balance FROM players WHERE session_id=$1 ORDER BY joined_at`,
+      `SELECT id, nickname, is_host, balance, pin FROM players WHERE session_id=$1 ORDER BY joined_at`,
       [req.params.id]
     );
     const { rows: events } = await pool.query(
@@ -70,18 +70,28 @@ router.get('/:id/full', async (req, res) => {
   }
 });
 
-// POST /api/sessions/:id/join — войти гостем
+// POST /api/sessions/:id/join — войти или восстановить сессию по PIN
 router.post('/:id/join', async (req, res) => {
-  const { nickname } = req.body;
-  if (!nickname) return res.status(400).json({ error: 'nickname required' });
+  const { nickname, pin } = req.body;
+  if (!pin) return res.status(400).json({ error: 'pin required' });
   try {
     const { rows: [session] } = await pool.query(`SELECT * FROM sessions WHERE id=$1`, [req.params.id]);
     if (!session) return res.status(404).json({ error: 'Session not found' });
 
+    // Если игрок с таким PIN уже есть — возвращаем его данные (rejoin)
+    const { rows: [existing] } = await pool.query(
+      `SELECT * FROM players WHERE session_id=$1 AND pin=$2`, [req.params.id, pin]
+    );
+    if (existing) {
+      return res.json({ player: existing, guestToken: existing.guest_token });
+    }
+
+    if (!nickname) return res.status(400).json({ error: 'nickname required for new player' });
+
     const guestToken = uuidv4();
     const { rows: [player] } = await pool.query(
-      `INSERT INTO players (session_id, nickname, guest_token, balance) VALUES ($1,$2,$3,$4) RETURNING *`,
-      [req.params.id, nickname, guestToken, session.starting_balance]
+      `INSERT INTO players (session_id, nickname, guest_token, balance, pin) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [req.params.id, nickname, guestToken, session.starting_balance, pin]
     );
     res.json({ player, guestToken });
   } catch (e) {
