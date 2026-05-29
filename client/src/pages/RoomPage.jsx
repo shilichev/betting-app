@@ -36,9 +36,9 @@ function RejoinForm({ sessionId, onRejoin }) {
         <form onSubmit={handleSubmit}>
           <div className="field">
             <label>Твой PIN</label>
-            <input value={pin} maxLength={4} className="code-input"
+            <input value={pin} maxLength={6} className="code-input"
               onChange={e => setPin(e.target.value.replace(/\D/g, ''))}
-              placeholder="1234" required autoFocus />
+              placeholder="738291" required autoFocus />
           </div>
           {error && <div className="error-msg">{error}</div>}
           <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
@@ -68,11 +68,7 @@ export default function RoomPage() {
 
   const fixedBet = session.fixed_bet ?? 100;
 
-  // Общий банк = сумма всех незавершённых ставок
-  // Банк = все ставки кроме уже выигранных (деньги ушли из балансов)
-  const totalBank = scoreBets
-    .filter(b => b.status !== 'won')
-    .reduce((s, b) => s + b.amount, 0);
+  const totalBank = session.bank ?? 0;
 
   async function handleStart() {
     await startSession(sessionId);

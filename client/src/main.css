@@ -140,18 +140,29 @@ a { color: var(--purple); }
 .match-setup-row { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; font-size: 14px; }
 
 /* ── Bet form ── */
-.bet-form { background: #16161e; border: 1px dashed #3a3a55; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
-.bet-form-row { display: flex; gap: 12px; align-items: flex-end; margin-bottom: 10px; }
-.bet-submit-row { display: flex; align-items: center; justify-content: space-between; }
+.bet-form { display: flex; flex-direction: column; align-items: flex-start; background: #16161e; border: 1px dashed #3a3a55; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+.bet-form .score-inputs-row { width: 100%; }
+.bet-submit-row { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
 .fixed-bet-label { font-size: 13px; color: var(--muted); }
 .winner-radio { display: flex; gap: 6px; flex-wrap: wrap; }
 .radio-btn { display: flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; font-size: 13px; transition: all .15s; }
 .radio-btn input[type=radio] { display: none; }
 .radio-btn.active { background: var(--purple); border-color: var(--purple); color: #fff; }
+.score-inputs-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; width: 100%; }
+.score-team-label { font-size: 13px; font-weight: 600; flex: 1; text-align: center; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.score-num-input { width: 64px; text-align: center; font-size: 24px; font-weight: 700; padding: 8px 4px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); -moz-appearance: textfield; }
+.score-num-input::-webkit-outer-spin-button,
+.score-num-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.score-dash { font-size: 20px; color: var(--muted); }
+.winner-hint { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
 
 /* ── PIN ── */
 .player-pin { font-size: 11px; color: var(--muted); background: #222; border-radius: 4px; padding: 1px 5px; margin-left: 4px; }
-.pin-hint { font-size: 12px; color: var(--muted); margin: -4px 0 8px; }
+.link-btn { background: none; border: none; color: var(--purple); font-size: 12px; cursor: pointer; padding: 4px 0; display: block; text-decoration: underline; }
+.pin-reveal { text-align: center; padding: 8px 0; }
+.pin-reveal-label { color: var(--muted); font-size: 13px; margin-bottom: 12px; }
+.pin-reveal-code { font-size: 48px; font-weight: 700; letter-spacing: 8px; color: var(--purple); margin-bottom: 16px; }
+.pin-reveal-hint { font-size: 13px; color: var(--muted); margin-bottom: 24px; line-height: 1.5; }
 
 /* ── Bank in topbar ── */
 .bank-display { font-size: 13px; color: var(--green); margin-right: 8px; }

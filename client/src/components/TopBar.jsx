@@ -1,4 +1,7 @@
+import { useNavigate } from 'react-router-dom';
+
 export default function TopBar({ session, bank, onCopyCode }) {
+  const navigate = useNavigate();
   const statusLabel = {
     waiting:  'Ожидание',
     active:   'Идёт игра',
@@ -7,7 +10,11 @@ export default function TopBar({ session, bank, onCopyCode }) {
 
   return (
     <header className="topbar">
-      <h1 className="logo">Bet<span>Room</span></h1>
+      <h1 className="logo" style={{ cursor: 'pointer' }} onClick={() => {
+        localStorage.removeItem('guestToken');
+        localStorage.removeItem('playerId');
+        navigate('/');
+      }}>Bet<span>Room</span></h1>
       <div className="topbar-right">
         {session.status === 'active' && bank > 0 && (
           <span className="bank-display">Банк: <strong>{bank.toLocaleString()}</strong></span>

@@ -45,6 +45,7 @@ export const lostScoreBet  = (id)        => patch(`${BASE}/score-bets/${id}/lost
 // ── Players ───────────────────────────────────
 export const adjustBalance = (id, delta, reason) =>
   patch(`${BASE}/players/${id}/balance`, { delta, reason });
+export const kickPlayer = (id) => request('DELETE', `${BASE}/players/${id}`);
 
 // ── Matches ───────────────────────────────────
 export const getMatches    = (sessionId) => get(`${BASE}/matches/${sessionId}`);

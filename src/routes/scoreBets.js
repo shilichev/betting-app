@@ -21,12 +21,21 @@ router.post('/', async (req, res) => {
     if (player.balance < amount)
       return res.status(400).json({ error: 'Недостаточно баланса' });
 
+    // Проверка на дублирующий счёт
+    const { rows: [duplicate] } = await pool.query(
+      `SELECT id FROM score_bets WHERE event_id=$1 AND prediction=$2`,
+      [eventId, prediction]
+    );
+    if (duplicate)
+      return res.status(400).json({ error: `Счёт ${prediction} уже занят` });
+
     const { rows: [event] } = await pool.query(
       `SELECT * FROM events WHERE id=$1`, [eventId]
     );
     if (!event) return res.status(404).json({ error: 'Event not found' });
 
     await pool.query(`UPDATE players SET balance=balance-$1 WHERE id=$2`, [amount, player.id]);
+    await pool.query(`UPDATE sessions SET bank=bank+$1 WHERE id=$2`, [amount, sessionId]);
 
     const { rows: [bet] } = await pool.query(
       `INSERT INTO score_bets (session_id, player_id, event_id, title, prediction, predicted_winner, amount)
@@ -62,28 +71,20 @@ router.patch('/:id/won', async (req, res) => {
     const { rows: [bet] } = await pool.query(`SELECT * FROM score_bets WHERE id=$1`, [req.params.id]);
     if (!bet) return res.status(404).json({ error: 'Not found' });
 
-    // Банк = сумма всех ставок на этот матч
-    const { rows: [{ bank }] } = await pool.query(
-      `SELECT COALESCE(SUM(amount), 0)::int AS bank FROM score_bets WHERE event_id=$1`,
-      [bet.event_id]
+    // Банк берём из сессии (сохраняется даже при удалении матчей)
+    const { rows: [session] } = await pool.query(
+      `SELECT bank FROM sessions WHERE id=$1`, [bet.session_id]
     );
+    const bank = session.bank;
 
-    await pool.query(
-      `UPDATE score_bets SET status='won', payout=$1 WHERE id=$2`,
-      [bank, bet.id]
-    );
-    await pool.query(
-      `UPDATE players SET balance=balance+$1 WHERE id=$2`,
-      [bank, bet.player_id]
-    );
+    await pool.query(`UPDATE score_bets SET status='won', payout=$1 WHERE id=$2`, [bank, bet.id]);
+    await pool.query(`UPDATE players SET balance=balance+$1 WHERE id=$2`, [bank, bet.player_id]);
+    await pool.query(`UPDATE sessions SET bank=0 WHERE id=$1`, [bet.session_id]);
     await pool.query(
       `UPDATE score_bets SET status='lost' WHERE event_id=$1 AND id!=$2 AND status!='won'`,
       [bet.event_id, bet.id]
     );
-    await pool.query(
-      `UPDATE events SET status='resolved', outcome='manual' WHERE id=$1`,
-      [bet.event_id]
-    );
+    await pool.query(`UPDATE events SET status='resolved', outcome='manual' WHERE id=$1`, [bet.event_id]);
 
     res.json({ ok: true, payout: bank });
   } catch (e) {

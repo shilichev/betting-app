@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { adjustBalance } from '../api';
+import { adjustBalance, kickPlayer } from '../api';
 
 export default function PlayersSidebar({ players, myPlayerId, isHost, sessionStatus, onAdjust }) {
   const sorted = [...players].sort((a, b) => b.balance - a.balance);
@@ -13,7 +13,7 @@ export default function PlayersSidebar({ players, myPlayerId, isHost, sessionSta
           player={p}
           isMe={p.id === myPlayerId}
           isHost={isHost}
-          sessionActive={sessionStatus === 'active'}
+          sessionStatus={sessionStatus}
           onAdjust={onAdjust}
         />
       ))}
@@ -21,7 +21,7 @@ export default function PlayersSidebar({ players, myPlayerId, isHost, sessionSta
   );
 }
 
-function PlayerItem({ player, isMe, isHost, sessionActive, onAdjust }) {
+function PlayerItem({ player, isMe, isHost, sessionStatus, onAdjust }) {
   const [amount, setAmount] = useState('');
 
   async function handle(sign) {
@@ -41,11 +41,21 @@ function PlayerItem({ player, isMe, isHost, sessionActive, onAdjust }) {
           <span>{player.nickname}</span>
           {isHost && player.pin && <span className="player-pin">PIN: {player.pin}</span>}
         </div>
-        <span className="player-balance">{player.balance.toLocaleString()}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span className="player-balance">{player.balance.toLocaleString()}</span>
+          {isHost && !player.is_host && (
+            <button className="btn btn-sm btn-danger" style={{ padding: '2px 7px', fontSize: 12 }}
+              onClick={async () => {
+                if (!confirm(`Удалить ${player.nickname}?`)) return;
+                await kickPlayer(player.id);
+                onAdjust();
+              }}>✕</button>
+          )}
+        </div>
       </div>
 
       {/* Управление балансом — только хосту, только в активной сессии */}
-      {isHost && sessionActive && (
+      {isHost && (sessionStatus === 'active' || sessionStatus === 'waiting') && (
         <div className="balance-controls">
           <input
             type="number" placeholder="±" value={amount} min="1"
