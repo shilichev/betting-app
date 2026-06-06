@@ -1,24 +1,33 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getSessionFull, getScoreBets } from '../api';
+import { getSessionFull, getScoreBets, getPropBets, getRaceBets, getDuels } from '../api';
 
 export function useRoom(sessionId) {
-  const [session,   setSession]   = useState(null);
-  const [players,   setPlayers]   = useState([]);
-  const [events,    setEvents]    = useState([]);
-  const [scoreBets, setScoreBets] = useState([]);
-  const [loading,   setLoading]   = useState(true);
-  const [error,     setError]     = useState(null);
+  const [session,    setSession]    = useState(null);
+  const [players,    setPlayers]    = useState([]);
+  const [events,     setEvents]     = useState([]);
+  const [scoreBets,  setScoreBets]  = useState([]);
+  const [propBets,   setPropBets]   = useState({ bets: [], entries: [] });
+  const [raceBets,   setRaceBets]   = useState({ bets: [], options: [], entries: [] });
+  const [duels,      setDuels]      = useState([]);
+  const [loading,    setLoading]    = useState(true);
+  const [error,      setError]      = useState(null);
 
   const refresh = useCallback(async () => {
     try {
-      const [full, score] = await Promise.all([
+      const [full, score, prop, race, duelList] = await Promise.all([
         getSessionFull(sessionId),
         getScoreBets(sessionId),
+        getPropBets(sessionId),
+        getRaceBets(sessionId),
+        getDuels(sessionId),
       ]);
       setSession(full.session);
       setPlayers(full.players);
       setEvents(full.events);
       setScoreBets(score);
+      setPropBets(prop);
+      setRaceBets(race);
+      setDuels(duelList);
       setError(null);
     } catch (e) {
       setError(e.message);
@@ -33,5 +42,5 @@ export function useRoom(sessionId) {
     return () => clearInterval(interval);
   }, [refresh]);
 
-  return { session, players, events, scoreBets, loading, error, refresh };
+  return { session, players, events, scoreBets, propBets, raceBets, duels, loading, error, refresh };
 }

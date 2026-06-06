@@ -137,7 +137,9 @@ a { color: var(--purple); }
 .loading { display: flex; align-items: center; justify-content: center; height: 100vh; color: var(--muted); font-size: 16px; }
 
 /* ── Match setup ── */
-.match-setup-row { display: flex; align-items: center; justify-content: space-between; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; font-size: 14px; }
+.match-setup-row { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; font-size: 14px; }
+.match-setup-row span:first-child { flex: 1; }
+.match-bet-tag { font-size: 12px; color: var(--purple); background: #2a1f4a; border-radius: 5px; padding: 2px 8px; white-space: nowrap; }
 
 /* ── Bet form ── */
 .bet-form { display: flex; flex-direction: column; align-items: flex-start; background: #16161e; border: 1px dashed #3a3a55; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
@@ -170,8 +172,104 @@ a { color: var(--purple); }
 /* ── Bets list ── */
 .bets-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
 .bet-amount { font-size: 12px; color: var(--muted); margin-right: 6px; }
-.winner-row { background: #1a2a1a; border: 1px solid var(--green); border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; font-size: 14px; color: var(--green); }
+.winner-row { background: #1a2a1a; border: 1px solid var(--green); border-radius: 8px; padding: 10px 14px; margin-bottom: 6px; font-size: 14px; color: var(--green); }
+.winner-row.no-winner { background: #1e1a1a; border-color: var(--border); color: var(--muted); }
+.winners-list { margin-bottom: 10px; }
+.score-actual { font-size: 13px; color: var(--muted); }
+.score-actual strong { color: var(--text); }
+.already-bet-msg { font-size: 13px; color: var(--muted); padding: 8px 0 12px; }
+.bets-counter { font-size: 12px; color: var(--muted); }
+.resolve-form-wrapper { border-top: 1px solid var(--border); margin-top: 12px; padding-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+.resolve-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.resolve-label { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.resolve-input { font-size: 18px !important; width: 52px !important; padding: 6px 4px !important; }
 .card-resolved { opacity: 0.8; }
+
+/* ── Create bet bar ── */
+.create-bet-bar { display: flex; gap: 8px; margin-bottom: 16px; }
+
+/* ── Prop bets ── */
+.prop-bet-section { margin-bottom: 8px; }
+.prop-add-btn { margin-bottom: 12px; }
+.prop-bet-card { margin-bottom: 10px; }
+.prop-bet-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 6px; }
+.prop-bet-title { font-size: 15px; font-weight: 700; }
+.prop-bet-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.prop-bet-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.prop-odds { font-size: 20px; font-weight: 800; color: var(--purple); }
+.prop-bet-limits { font-size: 12px; color: var(--muted); margin-bottom: 10px; }
+.prop-entry-form { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.prop-entry-input { width: 100px; padding: 7px 10px; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; color: var(--text); font-size: 14px; outline: none; }
+.prop-entry-input:focus { border-color: var(--purple); }
+.prop-countdown { font-size: 12px; color: var(--purple); margin-bottom: 6px; }
+
+/* ── DateTimePicker ── */
+.dtp-wrapper { width: 100%; }
+.dtp-input { width: 100%; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; outline: none; cursor: pointer; transition: border-color .15s; }
+.dtp-input:focus { border-color: var(--purple); }
+.dtp-input::placeholder { color: var(--muted); }
+.react-datepicker__close-icon::after { background: var(--muted) !important; font-size: 12px !important; }
+
+.dtp-calendar { background: var(--surface) !important; border: 1px solid var(--border) !important; border-radius: 12px !important; font-family: inherit !important; box-shadow: 0 8px 32px rgba(0,0,0,.4) !important; }
+.react-datepicker__triangle { display: none !important; }
+.react-datepicker__header { background: var(--bg) !important; border-bottom: 1px solid var(--border) !important; border-radius: 12px 12px 0 0 !important; padding: 12px 0 8px !important; }
+.react-datepicker__current-month { color: var(--text) !important; font-size: 14px !important; font-weight: 700 !important; }
+.react-datepicker__day-name { color: var(--muted) !important; font-size: 11px !important; width: 32px !important; }
+.react-datepicker__day { color: var(--text) !important; width: 32px !important; height: 32px !important; line-height: 32px !important; border-radius: 8px !important; font-size: 13px !important; margin: 2px !important; }
+.react-datepicker__day:hover { background: var(--purple) !important; color: #fff !important; }
+.react-datepicker__day--selected, .react-datepicker__day--keyboard-selected { background: var(--purple) !important; color: #fff !important; }
+.react-datepicker__day--outside-month { color: var(--border) !important; }
+.react-datepicker__day--disabled { color: var(--border) !important; cursor: default !important; }
+.react-datepicker__navigation-icon::before { border-color: var(--muted) !important; }
+.react-datepicker__navigation:hover .react-datepicker__navigation-icon::before { border-color: var(--purple) !important; }
+
+.react-datepicker__time-container { border-left: 1px solid var(--border) !important; }
+.react-datepicker__time-container .react-datepicker__time { background: var(--surface) !important; }
+.react-datepicker__time-container .react-datepicker__time-box { width: 90px !important; }
+.react-datepicker-time__header { color: var(--muted) !important; font-size: 11px !important; background: var(--bg) !important; border-bottom: 1px solid var(--border) !important; padding: 8px 0 !important; }
+.react-datepicker__time-list-item { color: var(--text) !important; font-size: 13px !important; height: 30px !important; line-height: 30px !important; padding: 0 !important; }
+.react-datepicker__time-list-item:hover { background: var(--purple) !important; color: #fff !important; }
+.react-datepicker__time-list-item--selected { background: var(--purple) !important; color: #fff !important; font-weight: 600 !important; }
+
+.dtp-popper { z-index: 9999 !important; }
+
+/* ── Duels ── */
+.duel-section { margin-bottom: 8px; }
+.duel-card { margin-bottom: 10px; }
+.duel-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px; }
+.duel-vs { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
+.duel-player { font-size: 14px; font-weight: 700; }
+.duel-player.challenger { color: var(--purple); }
+.duel-player.challenged { color: var(--green); }
+.duel-sword { font-size: 18px; flex-shrink: 0; }
+.duel-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.duel-title { font-size: 13px; color: var(--muted); font-style: italic; }
+.duel-opponents { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+
+/* ── Race bets ── */
+.race-section { margin-bottom: 8px; }
+.race-card { margin-bottom: 10px; }
+.race-options { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+.race-option { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; }
+.race-option-mine { border-color: var(--purple); }
+.race-option-winner { border-color: var(--green); background: #1a2a1a; }
+.race-option-label { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.race-option-stats { display: flex; gap: 8px; margin-bottom: 4px; }
+.race-option-pool { font-size: 12px; color: var(--purple); font-weight: 700; }
+.race-option-count { font-size: 12px; color: var(--muted); }
+.race-entry-row { display: flex; align-items: center; font-size: 13px; padding: 2px 0; }
+.race-entry-amount { margin-left: auto; color: var(--muted); font-size: 12px; }
+.race-entry-form { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 10px; }
+.race-entry-options { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 4px; }
+.race-pick-btn { padding: 7px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 13px; cursor: pointer; transition: all .15s; }
+.race-pick-btn:hover { border-color: var(--purple); }
+.race-pick-btn.selected { background: var(--purple); border-color: var(--purple); color: #fff; font-weight: 600; }
+.race-opt-row { display: flex; gap: 8px; margin-bottom: 6px; align-items: center; }
+.race-opt-row input { flex: 1; }
+.race-opt-remove { flex-shrink: 0; }
+.prop-payout-preview { font-size: 13px; color: var(--green); }
+.btn-outline { background: transparent; border: 1px solid var(--border); color: var(--muted); }
+.btn-outline:hover { border-color: var(--purple); color: var(--text); }
 
 /* ── Animations ── */
 @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }

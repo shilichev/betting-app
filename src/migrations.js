@@ -81,6 +81,84 @@ async function runMigrations() {
   await pool.query(`ALTER TABLE players ADD COLUMN IF NOT EXISTS pin VARCHAR(10)`);
   await pool.query(`ALTER TABLE score_bets ADD COLUMN IF NOT EXISTS event_id UUID REFERENCES events(id) ON DELETE CASCADE`);
   await pool.query(`ALTER TABLE score_bets ADD COLUMN IF NOT EXISTS predicted_winner VARCHAR(20) DEFAULT 'draw'`);
+  await pool.query(`ALTER TABLE events ADD COLUMN IF NOT EXISTS score_bet_amount INTEGER DEFAULT NULL`);
+  await pool.query(`ALTER TABLE events ADD COLUMN IF NOT EXISTS deadline TIMESTAMP DEFAULT NULL`);
+  await pool.query(`ALTER TABLE prop_bets ADD COLUMN IF NOT EXISTS deadline TIMESTAMP DEFAULT NULL`);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS duels (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+      challenger_id UUID REFERENCES players(id) ON DELETE CASCADE,
+      challenged_id UUID REFERENCES players(id) ON DELETE CASCADE,
+      title VARCHAR(255) NOT NULL,
+      amount INTEGER NOT NULL,
+      status VARCHAR(20) DEFAULT 'pending',
+      winner_id UUID REFERENCES players(id),
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS race_bets (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+      title VARCHAR(255) NOT NULL,
+      description TEXT,
+      min_amount INTEGER NOT NULL,
+      max_amount INTEGER NOT NULL,
+      status VARCHAR(20) DEFAULT 'open',
+      winning_option_id UUID,
+      deadline TIMESTAMP,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS race_bet_options (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      race_bet_id UUID REFERENCES race_bets(id) ON DELETE CASCADE,
+      label VARCHAR(255) NOT NULL
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS race_bet_entries (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      race_bet_id UUID REFERENCES race_bets(id) ON DELETE CASCADE,
+      option_id UUID REFERENCES race_bet_options(id) ON DELETE CASCADE,
+      player_id UUID REFERENCES players(id) ON DELETE CASCADE,
+      session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+      amount INTEGER NOT NULL,
+      payout INTEGER,
+      status VARCHAR(20) DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS prop_bets (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+      title VARCHAR(255) NOT NULL,
+      description TEXT,
+      odds FLOAT NOT NULL,
+      min_amount INTEGER NOT NULL,
+      max_amount INTEGER NOT NULL,
+      status VARCHAR(20) DEFAULT 'open',
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS prop_bet_entries (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      prop_bet_id UUID REFERENCES prop_bets(id) ON DELETE CASCADE,
+      player_id UUID REFERENCES players(id) ON DELETE CASCADE,
+      session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
+      amount INTEGER NOT NULL,
+      payout INTEGER,
+      status VARCHAR(20) DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
 
   console.log('✅ Migrations done');
 }

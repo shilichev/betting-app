@@ -17,7 +17,7 @@ export default function TopBar({ session, bank, onCopyCode }) {
       }}>Bet<span>Room</span></h1>
       <div className="topbar-right">
         {session.status === 'active' && bank > 0 && (
-          <span className="bank-display">Банк: <strong>{bank.toLocaleString()}</strong></span>
+          <span className="bank-display">🎰 Джекпот: <strong>{bank.toLocaleString()}</strong></span>
         )}
         <div className="status-dot-wrap">
           {session.status === 'active' && <div className="status-dot" />}

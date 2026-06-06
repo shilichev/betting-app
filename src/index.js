@@ -19,6 +19,9 @@ app.use('/api/bets',       require('./routes/bets'));
 app.use('/api/score-bets', require('./routes/scoreBets'));
 app.use('/api/players',    require('./routes/players'));
 app.use('/api/matches',    require('./routes/matches'));
+app.use('/api/prop-bets',  require('./routes/propBets'));
+app.use('/api/race-bets',  require('./routes/raceBets'));
+app.use('/api/duels',      require('./routes/duels'));
 
 // Serve React build in production
 if (process.env.NODE_ENV === 'production') {

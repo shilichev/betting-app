@@ -34,13 +34,38 @@ export const finishSession    = (id)         => patch(`${BASE}/sessions/${id}/fi
 
 // ── Events (матчи) ────────────────────────────
 export const createEvent  = (data) => post(`${BASE}/events`, data);
+export const lockEvent    = (id)   => patch(`${BASE}/events/${id}/lock`);
+export const updateEvent  = (id, data) => patch(`${BASE}/events/${id}`, data);
 export const deleteEvent  = (id)   => request('DELETE', `${BASE}/events/${id}`);
 
 // ── Score bets ────────────────────────────────
-export const getScoreBets  = (sessionId) => get(`${BASE}/score-bets/${sessionId}`);
-export const placeScoreBet = (data)      => post(`${BASE}/score-bets`, data);
-export const wonScoreBet   = (id)        => patch(`${BASE}/score-bets/${id}/won`);
-export const lostScoreBet  = (id)        => patch(`${BASE}/score-bets/${id}/lost`);
+export const getScoreBets    = (sessionId)                        => get(`${BASE}/score-bets/${sessionId}`);
+export const placeScoreBet   = (data)                             => post(`${BASE}/score-bets`, data);
+export const resolveScoreBet = (eventId, actualScore, guestToken) => patch(`${BASE}/score-bets/event/${eventId}/resolve`, { actualScore, guestToken });
+
+// ── Duels ─────────────────────────────────────
+export const getDuels       = (sessionId)              => get(`${BASE}/duels/${sessionId}`);
+export const createDuel     = (data)                   => post(`${BASE}/duels`, data);
+export const acceptDuel     = (id, token)              => patch(`${BASE}/duels/${id}/accept`, { guestToken: token });
+export const declineDuel    = (id, token)              => patch(`${BASE}/duels/${id}/decline`, { guestToken: token });
+export const cancelDuel     = (id, token)              => patch(`${BASE}/duels/${id}/cancel`, { guestToken: token });
+export const resolveDuel    = (id, winnerId, token)    => patch(`${BASE}/duels/${id}/resolve`, { winnerId, guestToken: token });
+
+// ── Race bets ─────────────────────────────────
+export const getRaceBets      = (sessionId)                  => get(`${BASE}/race-bets/${sessionId}`);
+export const createRaceBet    = (data)                       => post(`${BASE}/race-bets`, data);
+export const placeRaceBetEntry = (id, data)                  => post(`${BASE}/race-bets/${id}/bet`, data);
+export const lockRaceBet      = (id, token)                  => patch(`${BASE}/race-bets/${id}/lock`, { guestToken: token });
+export const resolveRaceBet   = (id, winningOptionId, token) => patch(`${BASE}/race-bets/${id}/resolve`, { winningOptionId, guestToken: token });
+export const deleteRaceBet    = (id, token)                  => request('DELETE', `${BASE}/race-bets/${id}`, { guestToken: token });
+
+// ── Prop bets ─────────────────────────────────
+export const getPropBets      = (sessionId)            => get(`${BASE}/prop-bets/${sessionId}`);
+export const createPropBet    = (data)                 => post(`${BASE}/prop-bets`, data);
+export const placePropBetEntry = (id, data)            => post(`${BASE}/prop-bets/${id}/bet`, data);
+export const lockPropBet      = (id, token)            => patch(`${BASE}/prop-bets/${id}/lock`, { guestToken: token });
+export const resolvePropBet   = (id, outcome, token)   => patch(`${BASE}/prop-bets/${id}/resolve`, { outcome, guestToken: token });
+export const deletePropBet    = (id, token)            => request('DELETE', `${BASE}/prop-bets/${id}`, { guestToken: token });
 
 // ── Players ───────────────────────────────────
 export const adjustBalance = (id, delta, reason) =>

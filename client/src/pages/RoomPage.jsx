@@ -7,6 +7,9 @@ import TopBar          from '../components/TopBar';
 import PlayersSidebar  from '../components/PlayersSidebar';
 import AddEventForm    from '../components/AddEventForm';
 import ScoreBetSection from '../components/ScoreBetSection';
+import PropBetSection  from '../components/PropBetSection';
+import RaceBetSection  from '../components/RaceBetSection';
+import DuelSection     from '../components/DuelSection';
 
 function RejoinForm({ sessionId, onRejoin }) {
   const [pin, setPin] = useState('');
@@ -52,10 +55,15 @@ function RejoinForm({ sessionId, onRejoin }) {
 
 export default function RoomPage() {
   const { id: sessionId } = useParams();
-  const { session, players, events, scoreBets, loading, refresh } = useRoom(sessionId);
+  const { session, players, events, scoreBets, propBets, raceBets, duels, loading, refresh } = useRoom(sessionId);
+  const [activeCreate, setActiveCreate] = useState(null); // null | 'score' | 'prop'
+
+  function toggleCreate(type) {
+    setActiveCreate(prev => prev === type ? null : type);
+  }
 
   const myPlayerId = localStorage.getItem('playerId');
-  const me = players.find(p => p.id === myPlayerId);
+  const me = players.find(p => String(p.id) === String(myPlayerId));
   const isHost = me?.is_host ?? false;
 
   if (loading) return <div className="loading">Загрузка...</div>;
@@ -126,9 +134,9 @@ export default function RoomPage() {
             </div>
           )}
 
-          {/* Хост добавляет матчи */}
-          {isHost && (session.status === 'waiting' || session.status === 'active') && (
-            <AddEventForm sessionId={sessionId} events={events} onCreated={refresh} />
+          {/* Хост настраивает матчи в ожидании */}
+          {isHost && session.status === 'waiting' && (
+            <AddEventForm sessionId={sessionId} events={events} fixedBet={fixedBet} onCreated={refresh} />
           )}
 
           {/* Игроки видят список матчей в ожидании */}
@@ -145,19 +153,142 @@ export default function RoomPage() {
             </div>
           )}
 
-          {/* Ставки */}
-          {session.status !== 'waiting' && (
-            <ScoreBetSection
-              sessionId={sessionId}
-              events={events}
-              scoreBets={scoreBets}
-              isHost={isHost}
-              sessionStatus={session.status}
-              guestToken={localStorage.getItem('guestToken')}
-              myBalance={me?.balance ?? 0}
-              fixedBet={fixedBet}
-              onUpdate={refresh}
-            />
+          {session.status === 'active' && (
+            <>
+              <div className="create-bet-bar">
+                {isHost && (
+                  <>
+                    <button
+                      className={`btn btn-sm${activeCreate === 'score' ? ' btn-primary' : ' btn-outline'}`}
+                      onClick={() => toggleCreate('score')}
+                    >
+                      + Точный счёт
+                    </button>
+                    <button
+                      className={`btn btn-sm${activeCreate === 'prop' ? ' btn-primary' : ' btn-outline'}`}
+                      onClick={() => toggleCreate('prop')}
+                    >
+                      + С коэффициентом
+                    </button>
+                    <button
+                      className={`btn btn-sm${activeCreate === 'race' ? ' btn-primary' : ' btn-outline'}`}
+                      onClick={() => toggleCreate('race')}
+                    >
+                      + Гонка
+                    </button>
+                  </>
+                )}
+                <button
+                  className={`btn btn-sm${activeCreate === 'duel' ? ' btn-primary' : ' btn-outline'}`}
+                  onClick={() => toggleCreate('duel')}
+                >
+                  ⚔️ Дуэль
+                </button>
+              </div>
+
+              {isHost && activeCreate === 'score' && (
+                <AddEventForm
+                  sessionId={sessionId}
+                  events={events}
+                  fixedBet={fixedBet}
+                  onCreated={() => { refresh(); setActiveCreate(null); }}
+                />
+              )}
+
+              <DuelSection
+                sessionId={sessionId}
+                duels={duels}
+                players={players}
+                isHost={isHost}
+                guestToken={localStorage.getItem('guestToken')}
+                myPlayerId={myPlayerId}
+                myBalance={me?.balance ?? 0}
+                fixedBet={fixedBet}
+                createOpen={activeCreate === 'duel'}
+                onCreateClose={() => setActiveCreate(null)}
+                onUpdate={refresh}
+              />
+
+              <RaceBetSection
+                sessionId={sessionId}
+                raceBets={raceBets}
+                isHost={isHost}
+                sessionStatus={session.status}
+                guestToken={localStorage.getItem('guestToken')}
+                myPlayerId={myPlayerId}
+                myBalance={me?.balance ?? 0}
+                fixedBet={fixedBet}
+                createOpen={activeCreate === 'race'}
+                onCreateClose={() => setActiveCreate(null)}
+                onUpdate={refresh}
+              />
+
+              <PropBetSection
+                sessionId={sessionId}
+                propBets={propBets}
+                isHost={isHost}
+                sessionStatus={session.status}
+                guestToken={localStorage.getItem('guestToken')}
+                myPlayerId={myPlayerId}
+                myBalance={me?.balance ?? 0}
+                fixedBet={fixedBet}
+                createOpen={activeCreate === 'prop'}
+                onCreateClose={() => setActiveCreate(null)}
+                onUpdate={refresh}
+              />
+
+              <ScoreBetSection
+                sessionId={sessionId}
+                events={events}
+                scoreBets={scoreBets}
+                isHost={isHost}
+                sessionStatus={session.status}
+                guestToken={localStorage.getItem('guestToken')}
+                myBalance={me?.balance ?? 0}
+                fixedBet={fixedBet}
+                myPlayerId={myPlayerId}
+                onUpdate={refresh}
+              />
+            </>
+          )}
+
+          {session.status === 'finished' && (
+            <>
+              <RaceBetSection
+                sessionId={sessionId}
+                raceBets={raceBets}
+                isHost={isHost}
+                sessionStatus={session.status}
+                guestToken={localStorage.getItem('guestToken')}
+                myPlayerId={myPlayerId}
+                myBalance={me?.balance ?? 0}
+                fixedBet={fixedBet}
+                onUpdate={refresh}
+              />
+              <PropBetSection
+                sessionId={sessionId}
+                propBets={propBets}
+                isHost={isHost}
+                sessionStatus={session.status}
+                guestToken={localStorage.getItem('guestToken')}
+                myPlayerId={myPlayerId}
+                myBalance={me?.balance ?? 0}
+                fixedBet={fixedBet}
+                onUpdate={refresh}
+              />
+              <ScoreBetSection
+                sessionId={sessionId}
+                events={events}
+                scoreBets={scoreBets}
+                isHost={isHost}
+                sessionStatus={session.status}
+                guestToken={localStorage.getItem('guestToken')}
+                myBalance={me?.balance ?? 0}
+                fixedBet={fixedBet}
+                myPlayerId={myPlayerId}
+                onUpdate={refresh}
+              />
+            </>
           )}
         </div>
       </div>

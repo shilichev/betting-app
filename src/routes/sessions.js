@@ -78,6 +78,13 @@ router.get('/:id/full', async (req, res) => {
       `SELECT id, nickname, is_host, balance, pin FROM players WHERE session_id=$1 ORDER BY joined_at`,
       [req.params.id]
     );
+    // Авто-лок матчей у которых истёк дедлайн
+    await pool.query(
+      `UPDATE events SET status='locked'
+       WHERE session_id=$1 AND status='open' AND deadline IS NOT NULL AND deadline < NOW()`,
+      [req.params.id]
+    );
+
     const { rows: events } = await pool.query(
       `SELECT * FROM events WHERE session_id=$1 ORDER BY created_at`,
       [req.params.id]
