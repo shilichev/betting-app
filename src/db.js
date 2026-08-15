@@ -5,6 +5,9 @@ const isLocal = !process.env.DATABASE_URL || process.env.DATABASE_URL.includes('
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: isLocal ? false : { rejectUnauthorized: false },
+  keepAlive: true,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
 });
 
 module.exports = pool;

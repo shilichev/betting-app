@@ -144,17 +144,36 @@ function RaceCard({ bet, options, entries, myEntry, isHost, guestToken, myBalanc
   return (
     <div className="card race-card">
       <div className="prop-bet-header">
-        <div>
-          <div className="prop-bet-title">{bet.title}</div>
-          {bet.description && <div className="prop-bet-desc">{bet.description}</div>}
+        <div className="bet-card-heading">
+          <span className="bet-card-icon icon-race">🏁</span>
+          <div className="bet-card-heading-text">
+            <div className="prop-bet-title">{bet.title}</div>
+            {bet.description && <div className="prop-bet-desc">{bet.description}</div>}
+          </div>
         </div>
         <div className="prop-bet-meta">
-          {pool > 0 && <span className="score-bank">Банк: <strong>{pool.toLocaleString()}</strong></span>}
-          {isLocked && <span className="badge s-lost" style={{ fontSize: 11 }}>Приём закрыт</span>}
+          {isLocked && <span className="badge s-lost">Приём закрыт</span>}
         </div>
       </div>
 
       {bet.deadline && !isLocked && <Countdown deadline={bet.deadline} />}
+
+      <div className="stat-row">
+        <div className="stat-chip">
+          <span className="stat-label">Мин. ставка</span>
+          <span className="stat-value">🪙 {bet.min_amount.toLocaleString()}</span>
+        </div>
+        <div className="stat-chip">
+          <span className="stat-label">Макс. ставка</span>
+          <span className="stat-value">🪙 {bet.max_amount.toLocaleString()}</span>
+        </div>
+        {pool > 0 && (
+          <div className="stat-chip">
+            <span className="stat-label">Банк</span>
+            <span className="stat-value accent">🪙 {pool.toLocaleString()}</span>
+          </div>
+        )}
+      </div>
 
       <div className="race-options">
         {options.map(opt => {
@@ -291,9 +310,12 @@ function RaceCardResolved({ bet, options, entries }) {
   return (
     <div className="card card-resolved race-card">
       <div className="prop-bet-header">
-        <div>
-          <div className="prop-bet-title">{bet.title}</div>
-          {bet.description && <div className="prop-bet-desc">{bet.description}</div>}
+        <div className="bet-card-heading">
+          <span className="bet-card-icon icon-race">🏁</span>
+          <div className="bet-card-heading-text">
+            <div className="prop-bet-title">{bet.title}</div>
+            {bet.description && <div className="prop-bet-desc">{bet.description}</div>}
+          </div>
         </div>
         <div className="prop-bet-meta">
           <span className="score-bank">Банк: <strong>{totalPool.toLocaleString()}</strong></span>

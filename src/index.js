@@ -15,13 +15,14 @@ app.use(express.json());
 // API routes
 app.use('/api/sessions',   require('./routes/sessions'));
 app.use('/api/events',     require('./routes/events'));
-app.use('/api/bets',       require('./routes/bets'));
 app.use('/api/score-bets', require('./routes/scoreBets'));
 app.use('/api/players',    require('./routes/players'));
 app.use('/api/matches',    require('./routes/matches'));
 app.use('/api/prop-bets',  require('./routes/propBets'));
 app.use('/api/race-bets',  require('./routes/raceBets'));
 app.use('/api/duels',      require('./routes/duels'));
+app.use('/api/auth',       require('./routes/auth'));
+app.use('/api/users',      require('./routes/users'));
 
 // Serve React build in production
 if (process.env.NODE_ENV === 'production') {

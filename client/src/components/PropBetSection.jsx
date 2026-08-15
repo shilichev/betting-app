@@ -149,23 +149,45 @@ function PropBetCard({ bet, entries, myEntry, isHost, guestToken, myBalance, onU
   return (
     <div className="card prop-bet-card">
       <div className="prop-bet-header">
-        <div>
-          <div className="prop-bet-title">{bet.title}</div>
-          {bet.description && <div className="prop-bet-desc">{bet.description}</div>}
+        <div className="bet-card-heading">
+          <span className="bet-card-icon icon-prop">📊</span>
+          <div className="bet-card-heading-text">
+            <div className="prop-bet-title">{bet.title}</div>
+            {bet.description && <div className="prop-bet-desc">{bet.description}</div>}
+          </div>
         </div>
         <div className="prop-bet-meta">
           <span className="prop-odds">x{bet.odds}</span>
-          {pool > 0 && <span className="score-bank">Пул: <strong>{pool.toLocaleString()}</strong></span>}
-          {isLocked && <span className="badge s-lost" style={{ fontSize: 11 }}>Приём закрыт</span>}
+          {isLocked && <span className="badge s-lost">Приём закрыт</span>}
         </div>
       </div>
 
       {bet.deadline && !isLocked && <Countdown deadline={bet.deadline} />}
 
-      <div className="prop-bet-limits">
-        {bet.min_amount === bet.max_amount
-          ? `Ставка: ${bet.min_amount.toLocaleString()}`
-          : `От ${bet.min_amount.toLocaleString()} до ${bet.max_amount.toLocaleString()}`}
+      <div className="stat-row">
+        {bet.min_amount === bet.max_amount ? (
+          <div className="stat-chip">
+            <span className="stat-label">Ставка</span>
+            <span className="stat-value">🪙 {bet.min_amount.toLocaleString()}</span>
+          </div>
+        ) : (
+          <>
+            <div className="stat-chip">
+              <span className="stat-label">Мин. ставка</span>
+              <span className="stat-value">🪙 {bet.min_amount.toLocaleString()}</span>
+            </div>
+            <div className="stat-chip">
+              <span className="stat-label">Макс. ставка</span>
+              <span className="stat-value">🪙 {bet.max_amount.toLocaleString()}</span>
+            </div>
+          </>
+        )}
+        {pool > 0 && (
+          <div className="stat-chip">
+            <span className="stat-label">Пул</span>
+            <span className="stat-value accent">🪙 {pool.toLocaleString()}</span>
+          </div>
+        )}
       </div>
 
       {!myEntry && !isHost && !isLocked && (
@@ -304,9 +326,12 @@ function PropBetCardResolved({ bet, entries }) {
   return (
     <div className="card card-resolved prop-bet-card">
       <div className="prop-bet-header">
-        <div>
-          <div className="prop-bet-title">{bet.title}</div>
-          {bet.description && <div className="prop-bet-desc">{bet.description}</div>}
+        <div className="bet-card-heading">
+          <span className="bet-card-icon icon-prop">📊</span>
+          <div className="bet-card-heading-text">
+            <div className="prop-bet-title">{bet.title}</div>
+            {bet.description && <div className="prop-bet-desc">{bet.description}</div>}
+          </div>
         </div>
         <div className="prop-bet-meta">
           <span className="prop-odds">x{bet.odds}</span>

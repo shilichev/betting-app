@@ -132,12 +132,16 @@ function DuelCard({ duel, myId, isHost, guestToken, onUpdate }) {
     <div className={`card duel-card${["declined","cancelled"].includes(duel.status) ? " card-resolved" : ""}`}>
       <div className="duel-header">
         <div className="duel-vs">
+          <span className="bet-card-icon icon-duel">⚔️</span>
           <span className="duel-player challenger">{duel.challenger_nickname}</span>
-          <span className="duel-sword">⚔️</span>
+          <span className="duel-sword">×</span>
           <span className="duel-player challenged">{duel.challenged_nickname}</span>
         </div>
         <div className="duel-meta">
-          <span className="prop-odds" style={{ fontSize: 16 }}>{duel.amount.toLocaleString()} × 2</span>
+          <div className="stat-chip">
+            <span className="stat-label">Приз (×2)</span>
+            <span className="stat-value accent">🪙 {prize.toLocaleString()}</span>
+          </div>
           <span className={`badge ${statusClass}`}>{statusLabel}</span>
         </div>
       </div>

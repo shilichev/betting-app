@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useRoom } from '../hooks/useRoom';
-import { startSession, finishSession, joinSession } from '../api';
+import { startSession, finishSession, joinSession, getMyPlayer } from '../api';
 
 import TopBar          from '../components/TopBar';
 import PlayersSidebar  from '../components/PlayersSidebar';
+import RoomControls    from '../components/RoomControls';
+import ActivityPanel   from '../components/ActivityPanel';
 import AddEventForm    from '../components/AddEventForm';
 import ScoreBetSection from '../components/ScoreBetSection';
 import PropBetSection  from '../components/PropBetSection';
@@ -57,6 +59,23 @@ export default function RoomPage() {
   const { id: sessionId } = useParams();
   const { session, players, events, scoreBets, propBets, raceBets, duels, loading, refresh } = useRoom(sessionId);
   const [activeCreate, setActiveCreate] = useState(null); // null | 'score' | 'prop'
+  const [recoveryDone, setRecoveryDone] = useState(false);
+
+  // Если гостевой сессии в этой комнате нет, но человек авторизован через Google —
+  // пробуем тихо восстановить его игрока по аккаунту, без PIN
+  useEffect(() => {
+    if (localStorage.getItem('guestToken') || !localStorage.getItem('appToken')) {
+      setRecoveryDone(true);
+      return;
+    }
+    getMyPlayer(sessionId)
+      .then(data => {
+        localStorage.setItem('guestToken', data.guestToken);
+        localStorage.setItem('playerId', data.player.id);
+      })
+      .catch(() => {})
+      .finally(() => setRecoveryDone(true));
+  }, [sessionId]);
 
   function toggleCreate(type) {
     setActiveCreate(prev => prev === type ? null : type);
@@ -66,7 +85,7 @@ export default function RoomPage() {
   const me = players.find(p => String(p.id) === String(myPlayerId));
   const isHost = me?.is_host ?? false;
 
-  if (loading) return <div className="loading">Загрузка...</div>;
+  if (loading || !recoveryDone) return <div className="loading">Загрузка...</div>;
   if (!session) return <div className="loading">Комната не найдена</div>;
 
   // Нет сессии в localStorage — показываем форму восстановления по PIN
@@ -94,17 +113,35 @@ export default function RoomPage() {
       <TopBar
         session={session}
         bank={totalBank}
+        playerCount={players.length}
+        myBalance={me?.balance}
         onCopyCode={() => navigator.clipboard.writeText(session.code)}
       />
 
       <div className="room-layout">
-        <PlayersSidebar
-          players={players}
-          myPlayerId={myPlayerId}
-          isHost={isHost}
-          sessionStatus={session.status}
-          onAdjust={refresh}
-        />
+        <aside className="sidebar">
+          <RoomControls
+            isHost={isHost}
+            sessionStatus={session.status}
+            eventsCount={events.length}
+            activeCreate={activeCreate}
+            onToggleCreate={toggleCreate}
+            onStart={handleStart}
+            onFinish={handleFinish}
+          />
+          <PlayersSidebar
+            players={players}
+            myPlayerId={myPlayerId}
+            isHost={isHost}
+            sessionStatus={session.status}
+            scoreBets={scoreBets}
+            propBets={propBets}
+            raceBets={raceBets}
+            duels={duels}
+            session={session}
+            onAdjust={refresh}
+          />
+        </aside>
 
         <div className="room-main">
           {session.status === 'waiting' && (
@@ -113,24 +150,6 @@ export default function RoomPage() {
               <button className="btn btn-sm btn-primary" onClick={() => navigator.clipboard.writeText(session.code)}>
                 Скопировать
               </button>
-            </div>
-          )}
-
-          {isHost && (
-            <div className="host-actions">
-              {session.status === 'waiting' && (
-                <button
-                  className="btn btn-success"
-                  onClick={handleStart}
-                  disabled={events.length === 0}
-                  title={events.length === 0 ? 'Добавь хотя бы один матч' : ''}
-                >
-                  ▶ Начать игру
-                </button>
-              )}
-              {session.status === 'active' && (
-                <button className="btn btn-danger" onClick={handleFinish}>■ Завершить</button>
-              )}
             </div>
           )}
 
@@ -155,37 +174,6 @@ export default function RoomPage() {
 
           {session.status === 'active' && (
             <>
-              <div className="create-bet-bar">
-                {isHost && (
-                  <>
-                    <button
-                      className={`btn btn-sm${activeCreate === 'score' ? ' btn-primary' : ' btn-outline'}`}
-                      onClick={() => toggleCreate('score')}
-                    >
-                      + Точный счёт
-                    </button>
-                    <button
-                      className={`btn btn-sm${activeCreate === 'prop' ? ' btn-primary' : ' btn-outline'}`}
-                      onClick={() => toggleCreate('prop')}
-                    >
-                      + С коэффициентом
-                    </button>
-                    <button
-                      className={`btn btn-sm${activeCreate === 'race' ? ' btn-primary' : ' btn-outline'}`}
-                      onClick={() => toggleCreate('race')}
-                    >
-                      + Гонка
-                    </button>
-                  </>
-                )}
-                <button
-                  className={`btn btn-sm${activeCreate === 'duel' ? ' btn-primary' : ' btn-outline'}`}
-                  onClick={() => toggleCreate('duel')}
-                >
-                  ⚔️ Дуэль
-                </button>
-              </div>
-
               {isHost && activeCreate === 'score' && (
                 <AddEventForm
                   sessionId={sessionId}
@@ -291,6 +279,17 @@ export default function RoomPage() {
             </>
           )}
         </div>
+
+        <aside className="activity-sidebar">
+          <ActivityPanel
+            myPlayerId={myPlayerId}
+            myBalance={me?.balance}
+            scoreBets={scoreBets}
+            propBets={propBets}
+            raceBets={raceBets}
+            duels={duels}
+          />
+        </aside>
       </div>
     </div>
   );

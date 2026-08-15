@@ -36,18 +36,6 @@ async function runMigrations() {
       created_at TIMESTAMP DEFAULT NOW()
     );
 
-    CREATE TABLE IF NOT EXISTS bets (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-      event_id UUID REFERENCES events(id) ON DELETE CASCADE,
-      player_id UUID REFERENCES players(id) ON DELETE CASCADE,
-      side VARCHAR(255) NOT NULL,
-      amount INTEGER NOT NULL,
-      odds FLOAT NOT NULL,
-      status VARCHAR(20) DEFAULT 'pending',
-      payout INTEGER DEFAULT 0,
-      placed_at TIMESTAMP DEFAULT NOW()
-    );
-
     CREATE TABLE IF NOT EXISTS score_bets (
       id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
       session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
@@ -75,6 +63,18 @@ async function runMigrations() {
       created_at TIMESTAMP DEFAULT NOW()
     );
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      google_sub VARCHAR(255) UNIQUE NOT NULL,
+      email VARCHAR(255),
+      name VARCHAR(255),
+      picture TEXT,
+      created_at TIMESTAMP DEFAULT NOW()
+    )
+  `);
+
   // Новые колонки (безопасно, IF NOT EXISTS)
   await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS fixed_bet INTEGER DEFAULT 100`);
   await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS bank INTEGER DEFAULT 0`);
@@ -83,7 +83,12 @@ async function runMigrations() {
   await pool.query(`ALTER TABLE score_bets ADD COLUMN IF NOT EXISTS predicted_winner VARCHAR(20) DEFAULT 'draw'`);
   await pool.query(`ALTER TABLE events ADD COLUMN IF NOT EXISTS score_bet_amount INTEGER DEFAULT NULL`);
   await pool.query(`ALTER TABLE events ADD COLUMN IF NOT EXISTS deadline TIMESTAMP DEFAULT NULL`);
-  await pool.query(`ALTER TABLE prop_bets ADD COLUMN IF NOT EXISTS deadline TIMESTAMP DEFAULT NULL`);
+  await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS min_bet INTEGER DEFAULT 50`);
+  await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS max_bet INTEGER DEFAULT 500`);
+  await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS bet_step INTEGER DEFAULT 50`);
+  await pool.query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS is_private BOOLEAN DEFAULT false`);
+  await pool.query(`ALTER TABLE players ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES users(id) ON DELETE SET NULL`);
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_players_user_id ON players(user_id) WHERE user_id IS NOT NULL`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS duels (
@@ -144,6 +149,7 @@ async function runMigrations() {
       min_amount INTEGER NOT NULL,
       max_amount INTEGER NOT NULL,
       status VARCHAR(20) DEFAULT 'open',
+      deadline TIMESTAMP DEFAULT NULL,
       created_at TIMESTAMP DEFAULT NOW()
     )
   `);

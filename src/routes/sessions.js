@@ -1,7 +1,9 @@
 const router = require('express').Router();
 const rateLimit = require('express-rate-limit');
+const { ipKeyGenerator } = require('express-rate-limit');
 const pool = require('../db');
 const { v4: uuidv4 } = require('uuid');
+const { verifyAppJwt } = require('../authUtils');
 
 const generateCode = () => Math.random().toString(36).substring(2, 8).toUpperCase();
 
@@ -25,29 +27,39 @@ const joinLimiter = rateLimit({
   message: { error: 'Слишком много попыток входа. Подожди 5 минут.' },
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => `${req.ip}-${req.params.id}`,
+  keyGenerator: (req) => `${ipKeyGenerator(req)}-${req.params.id}`,
   skipSuccessfulRequests: true, // не считаем успешные входы
 });
 
-// POST /api/sessions — создать комнату
+// POST /api/sessions — создать комнату (только для авторизованных через Google)
 router.post('/', async (req, res) => {
-  const { title, nickname, startingBalance = 1000, fixedBet = 100 } = req.body;
-  if (!title || !nickname) return res.status(400).json({ error: 'title and nickname required' });
+  const auth = verifyAppJwt(req);
+  if (!auth) return res.status(401).json({ error: 'Войдите через Google, чтобы создать комнату' });
+
+  const {
+    title, nickname, startingBalance = 1000,
+    minBet = 50, maxBet = 500, betStep = 50, isPrivate = false,
+  } = req.body;
+  const finalNickname = nickname || auth.name || 'Хост';
+  if (!title) return res.status(400).json({ error: 'title required' });
+  if (minBet <= 0 || betStep <= 0) return res.status(400).json({ error: 'Мин. ставка и шаг должны быть больше нуля' });
+  if (maxBet < minBet) return res.status(400).json({ error: 'Макс. ставка не может быть меньше минимальной' });
 
   const code = generateCode();
   const guestToken = uuidv4();
 
   try {
     const { rows: [session] } = await pool.query(
-      `INSERT INTO sessions (code, title, mode, starting_balance, fixed_bet) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [code, title, 'bankroll', startingBalance, fixedBet]
+      `INSERT INTO sessions (code, title, mode, starting_balance, fixed_bet, min_bet, max_bet, bet_step, is_private)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
+      [code, title, 'bankroll', startingBalance, minBet, minBet, maxBet, betStep, !!isPrivate]
     );
 
     const pin = await generateUniquePin(session.id);
 
     const { rows: [player] } = await pool.query(
-      `INSERT INTO players (session_id, nickname, guest_token, is_host, balance, pin) VALUES ($1,$2,$3,true,$4,$5) RETURNING *`,
-      [session.id, nickname, guestToken, startingBalance, pin]
+      `INSERT INTO players (session_id, nickname, guest_token, is_host, balance, pin, user_id) VALUES ($1,$2,$3,true,$4,$5,$6) RETURNING *`,
+      [session.id, finalNickname, guestToken, startingBalance, pin, auth.uid]
     );
     await pool.query(`UPDATE sessions SET host_player_id=$1 WHERE id=$2`, [player.id, session.id]);
 
@@ -62,6 +74,7 @@ router.get('/by-code/:code', async (req, res) => {
   try {
     const { rows } = await pool.query(`SELECT * FROM sessions WHERE code=$1`, [req.params.code.toUpperCase()]);
     if (!rows[0]) return res.status(404).json({ error: 'Комната не найдена' });
+    if (rows[0].is_private) return res.status(403).json({ error: 'Комната приватная — нужна ссылка-приглашение' });
     res.json(rows[0]);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -101,6 +114,7 @@ router.get('/:id/full', async (req, res) => {
 // С pin → rejoin по существующему PIN
 router.post('/:id/join', joinLimiter, async (req, res) => {
   const { nickname, pin } = req.body;
+  const auth = verifyAppJwt(req); // опционально — гость может входить и без Google
 
   try {
     const { rows: [session] } = await pool.query(`SELECT * FROM sessions WHERE id=$1`, [req.params.id]);
@@ -111,10 +125,14 @@ router.post('/:id/join', joinLimiter, async (req, res) => {
       const { rows: [existing] } = await pool.query(
         `SELECT * FROM players WHERE session_id=$1 AND pin=$2`, [req.params.id, pin]
       );
-      if (existing) {
-        return res.json({ player: existing, guestToken: existing.guest_token, pin: existing.pin, rejoin: true });
+      if (!existing) return res.status(404).json({ error: 'Игрок с таким PIN не найден' });
+
+      // Если игрок раньше был анонимным, а сейчас вошёл через Google — привязываем аккаунт
+      if (auth && !existing.user_id) {
+        await pool.query(`UPDATE players SET user_id=$1 WHERE id=$2`, [auth.uid, existing.id]);
+        existing.user_id = auth.uid;
       }
-      return res.status(404).json({ error: 'Игрок с таким PIN не найден' });
+      return res.json({ player: existing, guestToken: existing.guest_token, pin: existing.pin, rejoin: true });
     }
 
     // Новый игрок — сервер генерирует уникальный PIN
@@ -123,10 +141,28 @@ router.post('/:id/join', joinLimiter, async (req, res) => {
     const generatedPin = await generateUniquePin(req.params.id);
     const guestToken = uuidv4();
     const { rows: [player] } = await pool.query(
-      `INSERT INTO players (session_id, nickname, guest_token, balance, pin) VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-      [req.params.id, nickname, guestToken, session.starting_balance, generatedPin]
+      `INSERT INTO players (session_id, nickname, guest_token, balance, pin, user_id) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
+      [req.params.id, nickname, guestToken, session.starting_balance, generatedPin, auth ? auth.uid : null]
     );
     res.json({ player, guestToken, pin: generatedPin });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/sessions/:id/my-player — авторизованный пользователь восстанавливает свою
+// игровую личность в комнате без PIN (личность уже подтверждена Google-логином)
+router.get('/:id/my-player', async (req, res) => {
+  const auth = verifyAppJwt(req);
+  if (!auth) return res.status(401).json({ error: 'Не авторизован' });
+
+  try {
+    const { rows: [player] } = await pool.query(
+      `SELECT * FROM players WHERE session_id=$1 AND user_id=$2 ORDER BY joined_at DESC LIMIT 1`,
+      [req.params.id, auth.uid]
+    );
+    if (!player) return res.status(404).json({ error: 'В этой комнате нет твоего игрока' });
+    res.json({ player, guestToken: player.guest_token, pin: player.pin });
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
@@ -157,6 +193,7 @@ router.get('/:code', async (req, res) => {
   try {
     const { rows } = await pool.query(`SELECT * FROM sessions WHERE code=$1`, [req.params.code.toUpperCase()]);
     if (!rows[0]) return res.status(404).json({ error: 'Комната не найдена' });
+    if (rows[0].is_private) return res.status(403).json({ error: 'Комната приватная — нужна ссылка-приглашение' });
     res.json(rows[0]);
   } catch (e) {
     res.status(500).json({ error: e.message });

@@ -7,9 +7,13 @@ const BASE = '/api';
 
 // Вспомогательные функции
 async function request(method, url, body) {
+  const appToken = localStorage.getItem('appToken');
   const res = await fetch(url, {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(appToken ? { Authorization: `Bearer ${appToken}` } : {}),
+    },
     body: body ? JSON.stringify(body) : undefined,
   });
   const text = await res.text();
@@ -24,11 +28,16 @@ const post  = (url, body)  => request('POST',  url, body);
 const patch = (url, body)  => request('PATCH', url, body);
 
 
+// ── Auth ──────────────────────────────────────
+export const googleLogin = (idToken) => post(`${BASE}/auth/google`, { idToken });
+export const getMyRooms  = ()        => get(`${BASE}/users/me/sessions`);
+
 // ── Sessions ──────────────────────────────────
 export const createSession    = (data)       => post(`${BASE}/sessions`, data);
 export const getSessionByCode = (code)       => get(`${BASE}/sessions/${code}`);
 export const getSessionFull   = (id)         => get(`${BASE}/sessions/${id}/full`);
 export const joinSession      = (id, data)   => post(`${BASE}/sessions/${id}/join`, data);
+export const getMyPlayer      = (id)         => get(`${BASE}/sessions/${id}/my-player`);
 export const startSession     = (id)         => patch(`${BASE}/sessions/${id}/start`);
 export const finishSession    = (id)         => patch(`${BASE}/sessions/${id}/finish`);
 

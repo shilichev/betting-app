@@ -9,8 +9,10 @@ import RoomPage  from './pages/RoomPage';
 export default function App() {
   return (
     <Routes>
-      <Route path="/"           element={<LobbyPage />} />
-      <Route path="/room/:id"   element={<RoomPage />} />
+      <Route path="/"                  element={<LobbyPage />} />
+      <Route path="/join/:code"        element={<LobbyPage />} />
+      <Route path="/invite/:sessionId" element={<LobbyPage />} />
+      <Route path="/room/:id"          element={<RoomPage />} />
       <Route path="*"           element={<Navigate to="/" />} />
     </Routes>
   );

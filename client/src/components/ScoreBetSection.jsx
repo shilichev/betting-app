@@ -52,7 +52,10 @@ export default function ScoreBetSection({
         return (
           <div key={ev.id} className="card card-resolved">
             <div className="score-group-header">
-              <span className="score-group-title">{ev.title}</span>
+              <div className="bet-card-heading">
+                <span className="bet-card-icon icon-score">⚽</span>
+                <span className="score-group-title">{ev.title}</span>
+              </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 {ev.outcome && (
                   <span className="score-actual">Счёт: <strong>{ev.outcome}</strong></span>
@@ -112,15 +115,26 @@ function MatchCard({
   return (
     <div className="card">
       <div className="score-group-header">
-        <span className="score-group-title">{event.title}</span>
+        <div className="bet-card-heading">
+          <span className="bet-card-icon icon-score">⚽</span>
+          <span className="score-group-title">{event.title}</span>
+        </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           {!isHost && sessionStatus === "active" && !isLocked && (
             <span className="bets-counter">{myMatchBetsCount} / {betLimit}</span>
           )}
-          {isLocked && <span className="badge s-lost" style={{ fontSize: 11 }}>Приём закрыт</span>}
-          <span className="score-bank">
-            Банк: <strong>{bank.toLocaleString()}</strong>
-          </span>
+          {isLocked && <span className="badge s-lost">Приём закрыт</span>}
+        </div>
+      </div>
+
+      <div className="stat-row">
+        <div className="stat-chip">
+          <span className="stat-label">Ставка</span>
+          <span className="stat-value">🪙 {fixedBet.toLocaleString()}</span>
+        </div>
+        <div className="stat-chip">
+          <span className="stat-label">Банк</span>
+          <span className="stat-value accent">🪙 {bank.toLocaleString()}</span>
         </div>
       </div>
 
